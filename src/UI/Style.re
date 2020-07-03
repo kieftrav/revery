@@ -1,3 +1,5 @@
+open Skia;
+
 open Layout;
 
 open Revery_Core;
@@ -59,6 +61,7 @@ module PointerEvents = {
 
 type t = {
   backgroundColor: Color.t,
+  backgroundGradient: Skia.Paint.t,
   color: Color.t,
   width: int,
   height: int,
@@ -112,10 +115,28 @@ type t = {
   cursor: option(MouseCursors.t),
 };
 
+// Travis test gradient pulled from Canvas example
+let paintDefault = Skia.Paint.make();
+let linearGradientDefault =
+  Skia.Shader.makeLinearGradient2(
+    ~startPoint=Skia.Point.make(200.0, 200.0),
+    ~stopPoint=Skia.Point.make(220.0, 220.0),
+    ~startColor=Skia.Color.makeArgb(0xFFl, 0xFFl, 0x00l, 0x00l),
+    ~stopColor=Skia.Color.makeArgb(0xFFl, 0x00l, 0x00l, 0xFFl),
+    ~tileMode=`clamp,
+  );
+Skia.Paint.setShader(paintDefault, linearGradientDefault);
+Skia.Paint.setColor(
+  paintDefault,
+  Skia.Color.makeArgb(0xFFl, 0x00l, 0xFFl, 0x00l),
+);
+
+
 let make =
     (
       ~textOverflow=TextOverflow.Overflow,
       ~backgroundColor: Color.t=Colors.transparentBlack,
+      ~backgroundGradient: Skia.Paint.t=paintDefault,
       ~color: Color.t=Colors.white,
       ~width=Encoding.cssUndefined,
       ~height=Encoding.cssUndefined,
@@ -177,6 +198,7 @@ let make =
   let ret: t = {
     textOverflow,
     backgroundColor,
+    backgroundGradient,
     color,
     width,
     height,
@@ -306,6 +328,7 @@ type coreStyleProps = [
   | `AlignSelf(LayoutTypes.align)
   | `Position(LayoutTypes.positionType)
   | `BackgroundColor(Color.t)
+  | `BackgroundGradient(Paint.t)
   | `Color(Color.t)
   | `Width(int)
   | `Height(int)
@@ -514,6 +537,8 @@ let overflow = o =>
 
 let color = o => `Color(o);
 let backgroundColor = o => `BackgroundColor(o);
+let backgroundGradient = o => `BackgroundGradient(o)
+
 
 /*
    Helper function to narrow down a list of all possible style props to
@@ -600,6 +625,7 @@ let applyStyle = (style, styleRule) =>
   | `Cursor(cursor) => {...style, cursor}
   | `Color(color) => {...style, color}
   | `BackgroundColor(backgroundColor) => {...style, backgroundColor}
+  | `BackgroundGradient(backgroundGradient) => {...style, backgroundGradient}
   | `Width(width) => {...style, width}
   | `Height(height) => {...style, height}
   | `Bottom(bottom) => {...style, bottom}
@@ -629,6 +655,7 @@ let merge = (~source, ~target) =>
               | (`Cursor(_), `Cursor(_)) => targetStyle
               | (`Position(_), `Position(_)) => targetStyle
               | (`BackgroundColor(_), `BackgroundColor(_)) => targetStyle
+              | (`BackgroundGradient(_), `BackgroundGradient(_)) => targetStyle
               | (`Color(_), `Color(_)) => targetStyle
               | (`Width(_), `Width(_)) => targetStyle
               | (`Height(_), `Height(_)) => targetStyle
